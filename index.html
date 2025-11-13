@@ -227,6 +227,9 @@
             font-weight: bold;
             box-shadow: 0 0 15px rgba(255, 69, 0, 0.7);
             transition: transform 0.2s;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s forwards;
         }
         
         #restart-btn:active {
@@ -353,6 +356,33 @@
             align-items: center;
             justify-content: center;
         }
+        
+        /* Loading indicator */
+        #audio-loading {
+            position: absolute;
+            bottom: 60px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            display: none;
+            z-index: 21;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+        }
+        
+        .loading-dots:after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
     </style>
 </head>
 <body>
@@ -390,6 +420,7 @@
             <img id="character-image" src="https://i.postimg.cc/jL2Xb0KG/parv.jpg" alt="Character">
             <div id="game-over-text">KARA DIYE NASHE</div>
             <div id="final-score">0</div>
+            <div id="audio-loading">Waiting for audio to complete<span class="loading-dots"></span></div>
             <button id="restart-btn">TRY AGAIN</button>
         </div>
         
@@ -428,6 +459,7 @@
         let isFirstTap = true;
         let stars = [];
         let isMuted = false;
+        let hitSoundDuration = 3000; // Default duration in ms (will be updated when audio loads)
         
         // Audio elements
         const flapSound = document.getElementById('flap-sound');
@@ -557,14 +589,14 @@
                 handleFlap();
             }, { passive: false });
             
-            // Preload audio
+            // Preload audio and get duration
             preloadAudio();
             
             // Start animation loop
             requestAnimationFrame(gameLoop);
         }
         
-        // Preload audio files
+        // Preload audio files and get hit sound duration
         function preloadAudio() {
             // This ensures audio is ready to play
             flapSound.volume = 0.7;
@@ -577,6 +609,18 @@
             hitSound.load();
             pointSound.load();
             backgroundMusic.load();
+            
+            // Get the duration of the hit sound when it loads
+            hitSound.addEventListener('loadedmetadata', function() {
+                hitSoundDuration = hitSound.duration * 1000; // Convert to milliseconds
+                console.log('Hit sound duration:', hitSoundDuration + 'ms');
+            });
+            
+            // Fallback if we can't get duration
+            hitSound.addEventListener('error', function() {
+                console.log('Could not load hit sound, using default duration');
+                hitSoundDuration = 3000; // 3 seconds default
+            });
         }
         
         // Toggle mute
@@ -598,7 +642,7 @@
                 pointSound.volume = 0.5;
                 backgroundMusic.volume = 0.3;
                 if (gameStarted && !gameOver) {
-                    backgroundMusic.play().catch(e => console.log('Audio play failed:', e));
+                    backgroundMusic.play().catch(e => console.log('Background music play failed:', e));
                 }
             }
         }
@@ -617,6 +661,14 @@
             
             hitSound.currentTime = 0;
             hitSound.play().catch(e => console.log('Hit sound play failed:', e));
+            
+            // Return a promise that resolves when the sound finishes
+            return new Promise((resolve) => {
+                hitSound.addEventListener('ended', resolve, { once: true });
+                
+                // Fallback timeout in case the ended event doesn't fire
+                setTimeout(resolve, hitSoundDuration + 500);
+            });
         }
         
         // Play point sound
@@ -719,24 +771,33 @@
         // Restart the game
         function restartGame() {
             document.getElementById('game-over').style.display = 'none';
+            document.getElementById('audio-loading').style.display = 'none';
+            document.getElementById('restart-btn').style.opacity = '0';
+            document.getElementById('restart-btn').style.transform = 'translateY(20px)';
             gameOver = false;
             startGame();
         }
         
         // End the game
-        function endGame() {
+        async function endGame() {
             gameOver = true;
-            playHitSound();
             
             // Stop background music
             backgroundMusic.pause();
             
             document.getElementById('final-score').textContent = score;
             
-            // Add a delay before showing game over screen
-            setTimeout(() => {
-                document.getElementById('game-over').style.display = 'flex';
-            }, 800);
+            // Show game over screen immediately
+            document.getElementById('game-over').style.display = 'flex';
+            document.getElementById('audio-loading').style.display = 'block';
+            
+            // Play hit sound and wait for it to complete
+            await playHitSound();
+            
+            // Hide loading text and show restart button
+            document.getElementById('audio-loading').style.display = 'none';
+            document.getElementById('restart-btn').style.opacity = '1';
+            document.getElementById('restart-btn').style.transform = 'translateY(0)';
         }
         
         // Add a new pipe
