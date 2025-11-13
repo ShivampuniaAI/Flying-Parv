@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Parv Ko Bachao</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 360px;
+            height: 640px;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* Cinematic Screens */
+        #cinematic-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #000, #222);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            transition: opacity 1.5s ease;
+        }
+        
+        .cinematic-text {
+            font-size: 28px;
+            margin: 25px 0;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+            animation: fadeInUp 1.8s forwards;
+        }
+        
+        #mission-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #000, #1a1a2e, #16213e);
+            color: white;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 25;
+        }
+        
+        #mission-title {
+            font-size: 42px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            opacity: 0;
+            transform: scale(0.5);
+            animation: missionTitle 3s forwards;
+        }
+        
+        #mission-subtitle {
+            font-size: 24px;
+            margin-top: 20px;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 2s 2s forwards;
+        }
+        
+        @keyframes missionTitle {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+        
+        #start-btn {
+            margin-top: 50px;
+            padding: 15px 40px;
+            font-size: 22px;
+            background: linear-gradient(to right, #FFD700, #FFA500);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            opacity: 0;
+            animation: fadeIn 2s 6s forwards, pulse 2s infinite;
+            box-shadow: 0 0 20px #FFD700;
+            color: #333;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px #FFD700; }
+            50% { box-shadow: 0 0 30px #FFD700, 0 0 40px #FFA500; }
+            100% { box-shadow: 0 0 20px #FFD700; }
+        }
+        
+        /* Game UI */
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 50px;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+            z-index: 5;
+            display: none;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            animation: fadeIn 0.8s forwards;
+        }
+        
+        #character-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            border: 5px solid #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+            object-fit: cover;
+        }
+        
+        #game-over-text {
+            font-size: 40px;
+            margin: 20px 0;
+            color: #FFD700;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+            text-align: center;
+        }
+        
+        #final-score {
+            font-size: 70px;
+            margin: 10px 0;
+            color: white;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+        }
+        
+        #restart-btn {
+            padding: 15px 40px;
+            font-size: 22px;
+            background: linear-gradient(to right, #FF4500, #FF6347);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 30px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.7);
+            transition: transform 0.2s;
+        }
+        
+        #restart-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            display: none;
+            justify-content: center;
+            z-index: 5;
+        }
+        
+        .tap-area {
+            width: 160px;
+            height: 160px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: pulse 2s infinite;
+            touch-action: manipulation;
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 200px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 5;
+        }
+        
+        #get-ready {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 10;
+            animation: fadeInOut 2s infinite;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        
+        @media (max-width: 400px) {
+            #game-container {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+            
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .cinematic-text {
+                font-size: 24px;
+            }
+            
+            #mission-title {
+                font-size: 36px;
+            }
+        }
+        
+        /* Floating animation for bird */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        /* Starfield animation */
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+        
+        /* Audio controls */
+        #audio-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 40;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .audio-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- Audio Controls -->
+        <div id="audio-controls">
+            <button class="audio-btn" id="mute-btn">🔊</button>
+        </div>
+        
+        <!-- Cinematic Credits -->
+        <div id="cinematic-container">
+            <div class="cinematic-text" style="animation-delay: 0.5s">Sponsored by Ritik</div>
+            <div class="cinematic-text" style="animation-delay: 1.5s">Co Powered by Ritik</div>
+            <div class="cinematic-text" style="animation-delay: 2.5s">Idea by Madhav Bhatia</div>
+            <div class="cinematic-text" style="animation-delay: 3.5s">Developed by Man Kairo</div>
+            <div class="cinematic-text" style="animation-delay: 4.5s">Source code by Shivam</div>
+            <button id="start-btn">START MISSION</button>
+        </div>
+        
+        <!-- Mission Screen -->
+        <div id="mission-screen">
+            <h1 id="mission-title">MISSION PARV KO BACHAO</h1>
+            <p id="mission-subtitle">Save Parv from the Poop Pillars!</p>
+        </div>
+        
+        <!-- Game UI -->
+        <div id="get-ready">GET READY!</div>
+        <div id="score-display">0</div>
+        <div class="instructions">Tap or Press SPACE to Flap!</div>
+        
+        <!-- Game Over Screen -->
+        <div id="game-over">
+            <img id="character-image" src="https://i.postimg.cc/jL2Xb0KG/parv.jpg" alt="Character">
+            <div id="game-over-text">KARA DIYE NASHE</div>
+            <div id="final-score">0</div>
+            <button id="restart-btn">TRY AGAIN</button>
+        </div>
+        
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <div class="tap-area">TAP TO FLY</div>
+        </div>
+        
+        <!-- Audio Elements with your custom files -->
+        <audio id="flap-sound" preload="auto">
+            <source src="audio3.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="hit-sound" preload="auto">
+            <source src="audio4.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="point-sound" preload="auto">
+            <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-mechanical-bling-210.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="background-music" loop preload="auto">
+            <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <script>
+        // Game variables
+        let canvas, ctx;
+        let bird, pipes;
+        let score = 0;
+        let gameStarted = false;
+        let gameOver = false;
+        let frameCount = 0;
+        let backgroundPos = 0;
+        let lastTime = 0;
+        let deltaTime = 0;
+        let pipeTimer = 0;
+        let isFirstTap = true;
+        let stars = [];
+        let isMuted = false;
+        
+        // Audio elements
+        const flapSound = document.getElementById('flap-sound');
+        const hitSound = document.getElementById('hit-sound');
+        const pointSound = document.getElementById('point-sound');
+        const backgroundMusic = document.getElementById('background-music');
+        
+        // Images
+        const birdImg = new Image();
+        birdImg.src = 'https://i.postimg.cc/jL2Xb0KG/parv.jpg';
+        
+        const pipeImg = new Image();
+        pipeImg.src = 'https://www.houseofmarbles.us/wp-content/uploads/2023/02/240039-Dog-Poop-Indiv.jpg';
+        
+        // Initialize the game
+        function init() {
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas dimensions
+            canvas.width = 360;
+            canvas.height = 640;
+            
+            // Create starfield for mission screen
+            createStarfield();
+            
+            // Create bird with improved physics
+            bird = {
+                x: 80,
+                y: canvas.height / 2,
+                width: 50,
+                height: 50,
+                velocity: 0,
+                gravity: 0.4,
+                jump: -9,
+                rotation: 0,
+                maxFallSpeed: 12,
+                
+                draw: function() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.rotation * Math.PI / 180);
+                    
+                    // Draw bird using image if loaded, otherwise use placeholder
+                    if (birdImg.complete) {
+                        // Create circular clipping for the image
+                        ctx.beginPath();
+                        ctx.arc(0, 0, this.width/2, 0, Math.PI * 2);
+                        ctx.closePath();
+                        ctx.clip();
+                        
+                        ctx.drawImage(birdImg, -this.width/2, -this.height/2, this.width, this.height);
+                    } else {
+                        // Placeholder bird
+                        ctx.fillStyle = '#8B4513';
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    ctx.restore();
+                },
+                
+                update: function(deltaTime) {
+                    // Apply gravity with delta time for consistent physics
+                    this.velocity += this.gravity * (deltaTime / 16);
+                    
+                    // Limit fall speed
+                    if (this.velocity > this.maxFallSpeed) {
+                        this.velocity = this.maxFallSpeed;
+                    }
+                    
+                    this.y += this.velocity * (deltaTime / 16);
+                    
+                    // Rotate bird based on velocity (smoother rotation)
+                    this.rotation = Math.min(Math.max(this.velocity * 4, -25), 90);
+                    
+                    // Floor collision
+                    if (this.y + this.height/2 >= canvas.height) {
+                        this.y = canvas.height - this.height/2;
+                        if (gameStarted && !gameOver) {
+                            endGame();
+                        }
+                    }
+                    
+                    // Ceiling collision
+                    if (this.y - this.height/2 <= 0) {
+                        this.y = this.height/2;
+                        this.velocity = 0;
+                    }
+                },
+                
+                flap: function() {
+                    this.velocity = this.jump;
+                    this.rotation = -20;
+                    playFlapSound();
+                }
+            };
+            
+            // Initialize pipes
+            pipes = [];
+            
+            // Event listeners
+            document.getElementById('start-btn').addEventListener('click', startMission);
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+            document.getElementById('mute-btn').addEventListener('click', toggleMute);
+            
+            // Keyboard controls
+            document.addEventListener('keydown', function(e) {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    handleFlap();
+                }
+            });
+            
+            // Mouse and touch controls
+            canvas.addEventListener('click', handleFlap);
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                handleFlap();
+            }, { passive: false });
+            
+            // Mobile tap area
+            document.querySelector('.tap-area').addEventListener('click', handleFlap);
+            document.querySelector('.tap-area').addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                handleFlap();
+            }, { passive: false });
+            
+            // Preload audio
+            preloadAudio();
+            
+            // Start animation loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Preload audio files
+        function preloadAudio() {
+            // This ensures audio is ready to play
+            flapSound.volume = 0.7;
+            hitSound.volume = 0.7;
+            pointSound.volume = 0.5;
+            backgroundMusic.volume = 0.3;
+            
+            // Load audio files
+            flapSound.load();
+            hitSound.load();
+            pointSound.load();
+            backgroundMusic.load();
+        }
+        
+        // Toggle mute
+        function toggleMute() {
+            isMuted = !isMuted;
+            const muteBtn = document.getElementById('mute-btn');
+            
+            if (isMuted) {
+                muteBtn.textContent = '🔇';
+                flapSound.volume = 0;
+                hitSound.volume = 0;
+                pointSound.volume = 0;
+                backgroundMusic.volume = 0;
+                backgroundMusic.pause();
+            } else {
+                muteBtn.textContent = '🔊';
+                flapSound.volume = 0.7;
+                hitSound.volume = 0.7;
+                pointSound.volume = 0.5;
+                backgroundMusic.volume = 0.3;
+                if (gameStarted && !gameOver) {
+                    backgroundMusic.play().catch(e => console.log('Audio play failed:', e));
+                }
+            }
+        }
+        
+        // Play flap sound
+        function playFlapSound() {
+            if (isMuted) return;
+            
+            flapSound.currentTime = 0;
+            flapSound.play().catch(e => console.log('Flap sound play failed:', e));
+        }
+        
+        // Play hit sound
+        function playHitSound() {
+            if (isMuted) return;
+            
+            hitSound.currentTime = 0;
+            hitSound.play().catch(e => console.log('Hit sound play failed:', e));
+        }
+        
+        // Play point sound
+        function playPointSound() {
+            if (isMuted) return;
+            
+            pointSound.currentTime = 0;
+            pointSound.play().catch(e => console.log('Point sound play failed:', e));
+        }
+        
+        // Create starfield for mission screen
+        function createStarfield() {
+            stars = [];
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    opacity: Math.random() * 0.5 + 0.2,
+                    speed: Math.random() * 0.5 + 0.1
+                });
+            }
+        }
+        
+        // Draw starfield
+        function drawStarfield() {
+            stars.forEach(star => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Move stars for parallax effect
+                star.x -= star.speed;
+                if (star.x < 0) {
+                    star.x = canvas.width;
+                    star.y = Math.random() * canvas.height;
+                }
+            });
+        }
+        
+        // Handle flap action
+        function handleFlap() {
+            if (!gameStarted) {
+                return;
+            }
+            
+            if (gameStarted && !gameOver) {
+                bird.flap();
+                
+                // Hide get ready text after first tap
+                if (isFirstTap) {
+                    isFirstTap = false;
+                    document.getElementById('get-ready').style.display = 'none';
+                }
+            }
+        }
+        
+        // Start mission screen
+        function startMission() {
+            document.getElementById('cinematic-container').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('cinematic-container').style.display = 'none';
+                document.getElementById('mission-screen').style.display = 'flex';
+                
+                // Start game after mission screen
+                setTimeout(startGame, 4000);
+            }, 1000);
+        }
+        
+        // Start the game
+        function startGame() {
+            document.getElementById('mission-screen').style.display = 'none';
+            document.getElementById('score-display').style.display = 'block';
+            document.querySelector('.instructions').style.display = 'block';
+            document.getElementById('get-ready').style.display = 'block';
+            
+            gameStarted = true;
+            score = 0;
+            bird.y = canvas.height / 2;
+            bird.velocity = 0;
+            bird.rotation = 0;
+            pipes = [];
+            frameCount = 0;
+            pipeTimer = 0;
+            isFirstTap = true;
+            
+            // Reset lastTime for delta time calculation
+            lastTime = performance.now();
+            
+            document.getElementById('score-display').textContent = score;
+            
+            // Start background music
+            if (!isMuted) {
+                backgroundMusic.currentTime = 0;
+                backgroundMusic.play().catch(e => console.log('Background music play failed:', e));
+            }
+        }
+        
+        // Restart the game
+        function restartGame() {
+            document.getElementById('game-over').style.display = 'none';
+            gameOver = false;
+            startGame();
+        }
+        
+        // End the game
+        function endGame() {
+            gameOver = true;
+            playHitSound();
+            
+            // Stop background music
+            backgroundMusic.pause();
+            
+            document.getElementById('final-score').textContent = score;
+            
+            // Add a delay before showing game over screen
+            setTimeout(() => {
+                document.getElementById('game-over').style.display = 'flex';
+            }, 800);
+        }
+        
+        // Add a new pipe
+        function addPipe() {
+            if (!gameStarted || gameOver) return;
+            
+            const gap = 180; // Increased gap for easier gameplay
+            const minHeight = 80;
+            const maxHeight = canvas.height - gap - minHeight;
+            const height = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+            
+            pipes.push({
+                x: canvas.width,
+                y: 0,
+                width: 70,
+                height: height,
+                gap: gap,
+                passed: false
+            });
+        }
+        
+        // Update pipes
+        function updatePipes(deltaTime) {
+            // Add new pipes based on timer
+            pipeTimer += deltaTime;
+            if (pipeTimer > 1800) { // Add pipe every 1.8 seconds
+                addPipe();
+                pipeTimer = 0;
+            }
+            
+            for (let i = 0; i < pipes.length; i++) {
+                // Move pipes with consistent speed regardless of frame rate
+                pipes[i].x -= 3 * (deltaTime / 16);
+                
+                // Check if bird passed the pipe
+                if (!pipes[i].passed && pipes[i].x + pipes[i].width < bird.x) {
+                    pipes[i].passed = true;
+                    score++;
+                    document.getElementById('score-display').textContent = score;
+                    playPointSound();
+                }
+                
+                // Remove pipes that are off screen
+                if (pipes[i].x + pipes[i].width < 0) {
+                    pipes.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+        
+        // Draw pipes (poop pillars)
+        function drawPipes() {
+            for (let i = 0; i < pipes.length; i++) {
+                const pipe = pipes[i];
+                
+                // Draw top pipe (poop pillar)
+                if (pipeImg.complete) {
+                    // Draw using image with scaling to fit
+                    ctx.drawImage(pipeImg, pipe.x, pipe.y, pipe.width, pipe.height);
+                    
+                    // Draw bottom pipe
+                    ctx.drawImage(pipeImg, pipe.x, pipe.height + pipe.gap, pipe.width, canvas.height - pipe.height - pipe.gap);
+                } else {
+                    // Fallback drawing
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
+                    
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(pipe.x, pipe.height + pipe.gap, pipe.width, canvas.height - pipe.height - pipe.gap);
+                }
+            }
+        }
+        
+        // Check collisions
+        function checkCollisions() {
+            // Simple circle-rectangle collision detection
+            for (let i = 0; i < pipes.length; i++) {
+                const pipe = pipes[i];
+                
+                // Check collision with top pipe
+                if (circleRectCollision(
+                    bird.x, bird.y, bird.width/2,
+                    pipe.x, pipe.y, pipe.width, pipe.height
+                )) {
+                    endGame();
+                    return;
+                }
+                
+                // Check collision with bottom pipe
+                if (circleRectCollision(
+                    bird.x, bird.y, bird.width/2,
+                    pipe.x, pipe.height + pipe.gap, pipe.width, canvas.height - pipe.height - pipe.gap
+                )) {
+                    endGame();
+                    return;
+                }
+            }
+        }
+        
+        // Circle-rectangle collision detection
+        function circleRectCollision(cx, cy, radius, rx, ry, rw, rh) {
+            // Find the closest point to the circle within the rectangle
+            const closestX = Math.max(rx, Math.min(cx, rx + rw));
+            const closestY = Math.max(ry, Math.min(cy, ry + rh));
+            
+            // Calculate the distance between the circle's center and this closest point
+            const distanceX = cx - closestX;
+            const distanceY = cy - closestY;
+            
+            // If the distance is less than the circle's radius, collision
+            return (distanceX * distanceX + distanceY * distanceY) < (radius * radius);
+        }
+        
+        // Draw background with parallax effect
+        function drawBackground() {
+            // Sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a2a6c');
+            gradient.addColorStop(0.5, '#b21f1f');
+            gradient.addColorStop(1, '#fdbb2d');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            drawCloud(100 + backgroundPos * 0.5, 100, 40);
+            drawCloud(300 + backgroundPos * 0.3, 150, 60);
+            drawCloud(50 + backgroundPos * 0.7, 200, 30);
+            
+            // Update background position for parallax
+            backgroundPos -= 0.5;
+            if (backgroundPos < -canvas.width) backgroundPos = 0;
+        }
+        
+        // Draw a cloud
+        function drawCloud(x, y, size) {
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.arc(x + size * 0.8, y - size * 0.2, size * 0.8, 0, Math.PI * 2);
+            ctx.arc(x + size * 1.5, y, size * 0.9, 0, Math.PI * 2);
+            ctx.arc(x + size * 1.2, y + size * 0.3, size * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Game loop with delta time for consistent physics
+        function gameLoop(timestamp) {
+            // Calculate delta time for consistent physics
+            if (!lastTime) lastTime = timestamp;
+            deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw appropriate background based on screen
+            if (document.getElementById('mission-screen').style.display === 'flex') {
+                // Draw space background for mission screen
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                drawStarfield();
+            } else if (gameStarted) {
+                // Draw game background
+                drawBackground();
+                
+                // Update and draw pipes
+                updatePipes(deltaTime);
+                drawPipes();
+                
+                // Update and draw bird
+                bird.update(deltaTime);
+                bird.draw();
+                
+                // Check collisions
+                checkCollisions();
+                
+                // Increment frame count
+                frameCount++;
+            } else {
+                // Pre-game floating animation
+                bird.draw();
+                bird.y = canvas.height / 2 + Math.sin(frameCount * 0.05) * 10;
+                frameCount++;
+            }
+            
+            // Continue the game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Initialize the game when the page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
